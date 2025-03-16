@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>arXiv RSS Generator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>arXiv RSS URL Generator</h1>
+            <p>Create custom RSS feeds for arXiv search queries</p>
+        </header>
+        
+        <main>
+            <div class="search-builder">
+                <h2>Build Your Search Query</h2>
+                
+                <div id="search-terms">
+                    <div class="search-term">
+                        <select class="field-selector">
+                            <option value="ti">Title</option>
+                            <option value="au">Author</option>
+                            <option value="abs">Abstract</option>
+                            <option value="co">Comment</option>
+                            <option value="jr">Journal Reference</option>
+                            <option value="cat">Category</option>
+                            <option value="all">All Fields</option>
+                        </select>
+                        <input type="text" class="term-input" placeholder="Enter search term">
+                        <button class="remove-term" title="Remove term">✕</button>
+                    </div>
+                </div>
+                
+                <div class="term-controls">
+                    <button id="add-term">Add Another Term</button>
+                    <select id="term-connector">
+                        <option value="AND">AND</option>
+                        <option value="OR">OR</option>
+                        <option value="ANDNOT">ANDNOT</option>
+                    </select>
+                </div>
+
+                <div class="search-options">
+                    <h3>Search Options</h3>
+                    <div class="option-group">
+                        <label for="sort-by">Sort by:</label>
+                        <select id="sort-by">
+                            <option value="relevance">Relevance</option>
+                            <option value="lastUpdatedDate" selected>Last Updated Date</option>
+                            <option value="submittedDate">Submitted Date</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label for="sort-order">Sort order:</label>
+                        <select id="sort-order">
+                            <option value="ascending">Ascending</option>
+                            <option value="descending" selected>Descending</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label for="max-results">Max results:</label>
+                        <input type="number" id="max-results" value="10" min="1" max="2000">
+                    </div>
+                </div>
+                
+                <button id="generate-url" class="primary-button">Generate RSS URL</button>
+            </div>
+            
+            <div class="result-container">
+                <h3>Your RSS Feed URL</h3>
+                <div class="url-display">
+                    <pre id="result-url"></pre>
+                    <button id="copy-url" title="Copy to clipboard">Copy</button>
+                </div>
+                <p class="instructions">
+                    Add this URL to your RSS reader to subscribe to this search feed.
+                </p>
+                <h4>Example Feeds</h4>
+                <ul class="example-feeds">
+                    <li>
+                        <a href="http://export.arxiv.org/api/query?search_query=ti:(%22personalized%22+OR+%22personalizing%22)&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
+                            Titles with "personalized" OR "personalizing"
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://export.arxiv.org/api/query?search_query=ti:((%22fake+new%22+OR+%22misinfo%22+OR+%22rumor%22)+AND+%22video%22)&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
+                            Titles with ("fake new" OR "misinfo" OR "rumor") AND "video"
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Based on the <a href="https://info.arxiv.org/help/api/user-manual.html" target="_blank">arXiv API</a>.</p>
+        </footer>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
