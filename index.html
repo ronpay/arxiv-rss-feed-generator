@@ -17,24 +17,32 @@
             <div class="search-builder">
                 <h2>Build Your Search Query</h2>
                 
-                <div id="search-terms">
-                    <div class="search-term">
-                        <select class="field-selector">
-                            <option value="ti">Title</option>
-                            <option value="au">Author</option>
-                            <option value="abs">Abstract</option>
-                            <option value="co">Comment</option>
-                            <option value="jr">Journal Reference</option>
-                            <option value="cat">Category</option>
-                            <option value="all">All Fields</option>
-                        </select>
-                        <input type="text" class="term-input" placeholder="Enter search term">
-                        <button class="remove-term" title="Remove term">✕</button>
+                <div class="query-container">
+                    <div id="search-terms" class="term-group">
+                        <div class="group-controls">
+                            <span class="group-indicator">Group</span>
+                        </div>
+                        <div class="search-term">
+                            <select class="field-selector">
+                                <option value="ti">Title</option>
+                                <option value="au">Author</option>
+                                <option value="abs">Abstract</option>
+                                <option value="co">Comment</option>
+                                <option value="jr">Journal Reference</option>
+                                <option value="cat">Category</option>
+                                <option value="all">All Fields</option>
+                            </select>
+                            <input type="text" class="term-input" placeholder="Enter search term">
+                            <div class="term-actions">
+                                <button class="remove-term" title="Remove term">✕</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="term-controls">
-                    <button id="add-term">Add Another Term</button>
+                <div class="action-buttons">
+                    <button id="add-term" class="action-button">Add Term</button>
+                    <button id="add-group" class="action-button">Add Group</button>
                     <select id="term-connector">
                         <option value="AND">AND</option>
                         <option value="OR">OR</option>
@@ -76,20 +84,38 @@
                     <pre id="result-url"></pre>
                     <button id="copy-url" title="Copy to clipboard">Copy</button>
                 </div>
+                <div class="preview-section">
+                    <h4>Query Structure Preview</h4>
+                    <pre id="query-preview"></pre>
+                </div>
                 <p class="instructions">
                     Add this URL to your RSS reader to subscribe to this search feed.
                 </p>
                 <h4>Example Feeds</h4>
                 <ul class="example-feeds">
                     <li>
-                        <a href="http://export.arxiv.org/api/query?search_query=ti:(%22personalized%22+OR+%22personalizing%22)&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
-                            Titles with "personalized" OR "personalizing"
+                        <a href="http://export.arxiv.org/api/query?search_query=ti:(machine+learning)+AND+cat:cs.LG&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
+                            Latest machine learning papers in cs.LG
                         </a>
+                        <div class="example-preview">
+                            <code>ti:(machine learning) AND cat:cs.LG</code>
+                        </div>
                     </li>
                     <li>
-                        <a href="http://export.arxiv.org/api/query?search_query=ti:((%22fake+new%22+OR+%22misinfo%22+OR+%22rumor%22)+AND+%22video%22)&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
-                            Titles with ("fake new" OR "misinfo" OR "rumor") AND "video"
+                        <a href="http://export.arxiv.org/api/query?search_query=au:bengio+AND+au:hinton&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
+                            Papers co-authored by Bengio and Hinton
                         </a>
+                        <div class="example-preview">
+                            <code>au:bengio AND au:hinton</code>
+                        </div>
+                    </li>
+                    <li>
+                        <a href="http://export.arxiv.org/api/query?search_query=ti:((quantum+OR+qubits)+AND+algorithm)&sortBy=submittedDate&sortOrder=descending&start=0&max_results=10" target="_blank">
+                            Papers about quantum algorithms
+                        </a>
+                        <div class="example-preview">
+                            <code>ti:((quantum OR qubits) AND algorithm)</code>
+                        </div>
                     </li>
                 </ul>
             </div>
