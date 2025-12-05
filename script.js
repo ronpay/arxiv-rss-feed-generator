@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Generate the URL based on the form inputs
     function generateUrl() {
         // Base URL for arXiv API
-        const baseUrl = 'http://export.arxiv.org/api/query';
+        const baseUrl = 'https://export.arxiv.org/api/query';
         
         // Build query from the entire structure
         const searchQuery = buildQueryFromGroup(searchTermsContainer);
