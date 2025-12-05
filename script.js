@@ -221,62 +221,49 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to recursively build query from groups and terms
-    function buildQueryFromGroup(group, parentField = null) {
-        let items = Array.from(group.children).filter(el => 
-            el.classList.contains('search-term') || 
-            el.classList.contains('term-group') || 
+    function buildQueryFromGroup(group) {
+        let items = Array.from(group.children).filter(el =>
+            el.classList.contains('search-term') ||
+            el.classList.contains('term-group') ||
             el.classList.contains('connector-label')
         );
-        
+
         if (items.length === 0) return '';
-        
+
         let queryParts = [];
         let connector = 'AND'; // Default connector
-        
+
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
-            
+
             if (item.classList.contains('connector-label')) {
                 connector = item.textContent;
                 continue;
             }
-            
+
             let part = '';
-            
+
             if (item.classList.contains('search-term')) {
                 const field = item.querySelector('.field-selector').value;
                 const value = item.querySelector('.term-input').value.trim();
-                
+
                 if (value) {
                     // Format the value (add quotes if it contains spaces)
                     let formattedValue = value.includes(' ') ? `"${value}"` : value;
-                    
-                    // If we're inside a term with a field specified, we don't repeat the field
-                    if (parentField) {
-                        part = formattedValue;
-                    } else {
-                        part = `${field}:${formattedValue}`;
-                    }
-                }
-            } 
-            else if (item.classList.contains('term-group')) {
-                // For nested groups, we need to recursively build their query
-                const field = parentField ? null : 
-                              item.querySelector('.search-term .field-selector')?.value;
-                
-                const innerQuery = buildQueryFromGroup(item, field || parentField);
-                
-                if (innerQuery) {
-                    if (field && !parentField) {
-                        // If this group defines a field and we're not in a parent with a field
-                        part = `${field}:(${innerQuery})`;
-                    } else {
-                        // Otherwise just use parentheses for grouping
-                        part = `(${innerQuery})`;
-                    }
+                    // Always include the field prefix for each term
+                    part = `${field}:${formattedValue}`;
                 }
             }
-            
+            else if (item.classList.contains('term-group')) {
+                // For nested groups, recursively build their query
+                const innerQuery = buildQueryFromGroup(item);
+
+                if (innerQuery) {
+                    // Wrap nested group in parentheses for proper grouping
+                    part = `(${innerQuery})`;
+                }
+            }
+
             if (part) {
                 // If this isn't the first part and we have a connector from a previous item
                 if (queryParts.length > 0) {
@@ -285,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 queryParts.push(part);
             }
         }
-        
+
         return queryParts.join(' ');
     }
     
