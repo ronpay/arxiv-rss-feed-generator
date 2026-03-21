@@ -11,12 +11,30 @@ No installation needed - just use the online tool to create your custom arXiv RS
 ## Features
 
 - Create complex search queries with an intuitive interface
+- Import and modify existing queries from query strings or arXiv API URLs
 - Support for nested groups with different boolean operators (AND, OR, ANDNOT)
 - Search in specific fields (title, author, abstract, etc.)
 - Sort results by relevance, submission date, or update date
 - Generate an RSS feed URL you can use in any feed reader
 
 ## How to Use
+
+### Importing an Existing Query
+
+You can quickly import and modify existing queries by pasting them into the import panel:
+
+1. Click the "Import Query" button
+2. Paste one of the following formats:
+   - **Query structure**: e.g., `ti:"machine learning" AND au:bengio`
+   - **arXiv API URL**: e.g., `https://api.arxiv.org/query?search_query=ti:%22machine%20learning%22&sortBy=submittedDate&max_results=50`
+   - **Query parameters**: e.g., `search_query=ti:"machine learning"&sortBy=submittedDate&max_results=50`
+3. Click "Import" to populate the query builder with your search structure
+4. Make any adjustments as needed and generate your updated RSS URL
+
+This is useful for:
+- Modifying existing queries
+- Sharing and reusing query structures
+- Converting standard arXiv API URLs to the visual builder format
 
 ### Creating Your Search Query
 
