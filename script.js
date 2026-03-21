@@ -1,244 +1,308 @@
 document.addEventListener('DOMContentLoaded', function() {
-    // DOM elements
+    const parser = window.ArxivQueryParser;
+    const fieldOptions = [
+        { value: 'ti', label: 'Title' },
+        { value: 'au', label: 'Author' },
+        { value: 'abs', label: 'Abstract' },
+        { value: 'co', label: 'Comment' },
+        { value: 'jr', label: 'Journal Reference' },
+        { value: 'cat', label: 'Category' },
+        { value: 'all', label: 'All Fields' }
+    ];
+
     const searchTermsContainer = document.getElementById('search-terms');
     const addTermButton = document.getElementById('add-term');
     const addGroupButton = document.getElementById('add-group');
     const termConnector = document.getElementById('term-connector');
+    const importInput = document.getElementById('import-query');
+    const importButton = document.getElementById('import-query-button');
+    const importStatus = document.getElementById('import-status');
+    const sortByInput = document.getElementById('sort-by');
+    const sortOrderInput = document.getElementById('sort-order');
+    const maxResultsInput = document.getElementById('max-results');
     const generateUrlButton = document.getElementById('generate-url');
     const resultUrl = document.getElementById('result-url');
     const queryPreview = document.getElementById('query-preview');
     const copyUrlButton = document.getElementById('copy-url');
-    
-    // Add event listeners
+
     addTermButton.addEventListener('click', function() {
-        // Find the active group or use the main search terms container
-        const activeGroup = document.querySelector('.term-group.active') || searchTermsContainer;
+        const activeGroup = getActiveGroup();
         addSearchTerm(activeGroup);
     });
-    
+
     addGroupButton.addEventListener('click', function() {
-        // Find the active group or use the main search terms container
-        const activeGroup = document.querySelector('.term-group.active') || searchTermsContainer;
+        const activeGroup = getActiveGroup();
         addTermGroup(activeGroup);
     });
-    
+
+    importButton.addEventListener('click', handleImport);
     generateUrlButton.addEventListener('click', generateUrl);
     copyUrlButton.addEventListener('click', copyToClipboard);
-    
-    // Initialize the first term's remove button
-    initializeRemoveButtons();
-    
-    // Make the root group selectable
-    makeGroupSelectable(searchTermsContainer);
-    
-    // Function to add a new search term input to a group
-    function addSearchTerm(group) {
-        // Check if there are existing terms in this group
-        const existingTerms = group.querySelectorAll('.search-term, .term-group');
-        if (existingTerms.length > 0) {
-            // Add connector label if not the first item
-            const connector = document.createElement('div');
-            connector.className = 'connector-label';
-            connector.textContent = termConnector.value;
-            group.appendChild(connector);
+
+    searchTermsContainer.addEventListener('click', function(event) {
+        const removeTermButton = event.target.closest('.remove-term');
+        if (removeTermButton) {
+            event.stopPropagation();
+            removeTerm(removeTermButton.closest('.search-term'));
+            return;
         }
-        
-        const newTerm = document.createElement('div');
-        newTerm.className = 'search-term';
-        newTerm.innerHTML = `
+
+        const removeGroupButton = event.target.closest('.remove-group');
+        if (removeGroupButton) {
+            event.stopPropagation();
+            removeGroup(removeGroupButton.closest('.term-group'));
+            return;
+        }
+
+        if (
+            event.target.classList.contains('term-group') ||
+            event.target.classList.contains('group-controls') ||
+            event.target.classList.contains('group-indicator')
+        ) {
+            updateGroupSelection(event.target.closest('.term-group') || searchTermsContainer);
+        }
+    });
+
+    searchTermsContainer.addEventListener('input', updateQueryPreview);
+    searchTermsContainer.addEventListener('change', updateQueryPreview);
+
+    updateGroupSelection(searchTermsContainer);
+    updateQueryPreview();
+
+    function getFieldOptionsMarkup(selectedValue) {
+        return fieldOptions.map(function(option) {
+            const selected = option.value === selectedValue ? ' selected' : '';
+            return `<option value="${option.value}"${selected}>${option.label}</option>`;
+        }).join('');
+    }
+
+    function createConnectorElement(connector) {
+        const connectorElement = document.createElement('div');
+        connectorElement.className = 'connector-label';
+        connectorElement.textContent = connector;
+        return connectorElement;
+    }
+
+    function createTermElement(field, value) {
+        const term = document.createElement('div');
+        term.className = 'search-term';
+        term.innerHTML = `
             <select class="field-selector">
-                <option value="ti">Title</option>
-                <option value="au">Author</option>
-                <option value="abs">Abstract</option>
-                <option value="co">Comment</option>
-                <option value="jr">Journal Reference</option>
-                <option value="cat">Category</option>
-                <option value="all">All Fields</option>
+                ${getFieldOptionsMarkup(field || 'ti')}
             </select>
-            <input type="text" class="term-input" placeholder="Enter search term">
+            <input type="text" class="term-input" placeholder="Enter search term" value="${escapeAttribute(value || '')}">
             <div class="term-actions">
                 <button class="remove-term" title="Remove term">✕</button>
             </div>
         `;
-        
-        group.appendChild(newTerm);
-        initializeRemoveButtons();
-        updateGroupSelection(group);
+        return term;
     }
-    
-    // Function to add a new term group
-    function addTermGroup(parentGroup) {
-        // Check if there are existing items in the parent group
-        const existingItems = parentGroup.querySelectorAll('.search-term, .term-group');
-        if (existingItems.length > 0) {
-            // Add connector label if not the first item
-            const connector = document.createElement('div');
-            connector.className = 'connector-label';
-            connector.textContent = termConnector.value;
-            parentGroup.appendChild(connector);
-        }
-        
-        const newGroup = document.createElement('div');
-        newGroup.className = 'term-group';
-        newGroup.innerHTML = `
-            <div class="group-controls">
-                <span class="group-indicator">Group</span>
-                <div class="group-actions">
-                    <button class="remove-group" title="Remove group">✕</button>
-                </div>
+
+    function createGroupElement(isRoot) {
+        const group = document.createElement('div');
+        group.className = 'term-group';
+
+        const actionsMarkup = isRoot ? '' : `
+            <div class="group-actions">
+                <button class="remove-group" title="Remove group">✕</button>
             </div>
         `;
-        
-        parentGroup.appendChild(newGroup);
-        
-        // Add the first term to the new group
-        addSearchTerm(newGroup);
-        
-        // Initialize group controls
-        initializeGroupControls();
-        makeGroupSelectable(newGroup);
-        updateGroupSelection(newGroup);
+
+        group.innerHTML = `
+            <div class="group-controls">
+                <span class="group-indicator">Group</span>
+                ${actionsMarkup}
+            </div>
+        `;
+
+        if (isRoot) {
+            group.id = 'search-terms';
+        }
+
+        return group;
     }
-    
-    // Function to make a group selectable when clicked
-    function makeGroupSelectable(group) {
-        group.addEventListener('click', function(e) {
-            // Prevent bubbling to parent groups
-            if (e.target === group || group.contains(e.target)) {
-                e.stopPropagation();
-                
-                // Only handle clicks on the group itself or group controls, not on child terms
-                if (e.target === group || e.target.classList.contains('group-indicator')) {
-                    updateGroupSelection(group);
-                }
+
+    function escapeAttribute(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function getActiveGroup() {
+        return document.querySelector('.term-group.active') || searchTermsContainer;
+    }
+
+    function getDirectQueryItems(group) {
+        return Array.from(group.children).filter(function(element) {
+            return !element.classList.contains('group-controls');
+        });
+    }
+
+    function appendQueryItem(group, item, connector) {
+        if (getDirectQueryItems(group).length > 0) {
+            group.appendChild(createConnectorElement(connector || termConnector.value));
+        }
+
+        group.appendChild(item);
+        updateGroupSelection(group);
+    }
+
+    function addSearchTerm(group, config) {
+        const term = createTermElement(
+            config && config.field,
+            config && config.value
+        );
+        appendQueryItem(group, term, config && config.connector);
+    }
+
+    function addTermGroup(parentGroup, config) {
+        const group = createGroupElement(false);
+        appendQueryItem(parentGroup, group, config && config.connector);
+
+        if (config && config.items && config.items.length > 0) {
+            populateGroupFromAst(group, config);
+        } else {
+            addSearchTerm(group);
+        }
+
+        updateGroupSelection(group);
+    }
+
+    function clearGroup(group) {
+        getDirectQueryItems(group).forEach(function(item) {
+            item.remove();
+        });
+    }
+
+    function populateGroupFromAst(groupElement, groupAst) {
+        clearGroup(groupElement);
+
+        groupAst.items.forEach(function(item, index) {
+            const connector = index > 0 ? groupAst.connectors[index - 1] : null;
+
+            if (item.type === 'term') {
+                addSearchTerm(groupElement, {
+                    field: item.field,
+                    value: item.value,
+                    connector: connector
+                });
+                return;
             }
-        });
-    }
-    
-    // Update the active group highlighting
-    function updateGroupSelection(group) {
-        // Remove active class from all groups
-        document.querySelectorAll('.term-group').forEach(g => {
-            g.classList.remove('active');
-        });
-        
-        // Add active class to the clicked group
-        group.classList.add('active');
-    }
-    
-    // Initialize remove buttons for search terms
-    function initializeRemoveButtons() {
-        document.querySelectorAll('.remove-term').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation(); // Prevent bubbling
-                
-                // Find the term container
-                const term = this.closest('.search-term');
-                
-                // Find connector before this term (if any)
-                let connector = term.previousElementSibling;
-                if (connector && connector.className === 'connector-label') {
-                    connector.remove();
-                } else {
-                    // If this is the first item, check if the next item has a connector
-                    let nextElement = term.nextElementSibling;
-                    if (nextElement && nextElement.className === 'connector-label') {
-                        nextElement.remove();
-                    }
-                }
-                
-                // Remove the term
-                term.remove();
-                
-                // Check if the parent group is empty
-                const parentGroup = term.closest('.term-group');
-                checkForEmptyGroup(parentGroup);
+
+            addTermGroup(groupElement, {
+                items: item.items,
+                connectors: item.connectors,
+                connector: connector
             });
         });
     }
-    
-    // Initialize group controls
-    function initializeGroupControls() {
-        document.querySelectorAll('.remove-group').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.stopPropagation(); // Prevent bubbling
-                
-                // Find the group container
-                const group = this.closest('.term-group');
-                
-                // Find connector before this group (if any)
-                let connector = group.previousElementSibling;
-                if (connector && connector.className === 'connector-label') {
-                    connector.remove();
-                } else {
-                    // If this is the first item, check if the next item has a connector
-                    let nextElement = group.nextElementSibling;
-                    if (nextElement && nextElement.className === 'connector-label') {
-                        nextElement.remove();
-                    }
-                }
-                
-                // Remove the group
-                group.remove();
-                
-                // Check if the parent group is empty
-                const parentGroup = group.parentElement.closest('.term-group');
-                if (parentGroup) {
-                    checkForEmptyGroup(parentGroup);
-                }
-            });
-        });
+
+    function renderImportedAst(ast) {
+        populateGroupFromAst(searchTermsContainer, ast);
+        updateGroupSelection(searchTermsContainer);
+        updateQueryPreview();
     }
-    
-    // Check if a group is empty and add a default term if needed
-    function checkForEmptyGroup(group) {
-        if (!group) return;
-        
-        // Check if there are any terms or sub-groups
-        const hasChildren = group.querySelector('.search-term, .term-group');
-        
-        if (!hasChildren) {
-            // Root group should always have at least one term
-            if (group === searchTermsContainer) {
-                addSearchTerm(group);
-            }
-            // Non-root empty groups will be removed
-            else if (group.parentElement) {
-                // Find connector before this group (if any)
-                let connector = group.previousElementSibling;
-                if (connector && connector.className === 'connector-label') {
-                    connector.remove();
-                } else {
-                    // If this is the first item, check if the next item has a connector
-                    let nextElement = group.nextElementSibling;
-                    if (nextElement && nextElement.className === 'connector-label') {
-                        nextElement.remove();
-                    }
-                }
-                group.remove();
+
+    function removeItemAndConnector(item) {
+        if (!item) {
+            return;
+        }
+
+        const previousElement = item.previousElementSibling;
+        const nextElement = item.nextElementSibling;
+
+        if (previousElement && previousElement.classList.contains('connector-label')) {
+            previousElement.remove();
+        } else if (nextElement && nextElement.classList.contains('connector-label')) {
+            nextElement.remove();
+        }
+
+        item.remove();
+    }
+
+    function removeTerm(term) {
+        const parentGroup = term.closest('.term-group');
+        removeItemAndConnector(term);
+        checkForEmptyGroup(parentGroup);
+        updateQueryPreview();
+    }
+
+    function removeGroup(group) {
+        if (group === searchTermsContainer) {
+            return;
+        }
+
+        const parentGroup = group.parentElement.closest('.term-group');
+        const wasActive = group.classList.contains('active');
+        removeItemAndConnector(group);
+
+        if (parentGroup) {
+            checkForEmptyGroup(parentGroup);
+            if (wasActive) {
+                updateGroupSelection(parentGroup);
             }
         }
+
+        updateQueryPreview();
     }
-    
-    // Function to recursively build query from groups and terms
+
+    function checkForEmptyGroup(group) {
+        if (!group) {
+            return;
+        }
+
+        const directItems = getDirectQueryItems(group);
+
+        if (directItems.length > 0) {
+            return;
+        }
+
+        if (group === searchTermsContainer) {
+            addSearchTerm(group);
+            return;
+        }
+
+        const parentGroup = group.parentElement.closest('.term-group');
+        removeItemAndConnector(group);
+
+        if (parentGroup) {
+            checkForEmptyGroup(parentGroup);
+        }
+    }
+
+    function updateGroupSelection(group) {
+        document.querySelectorAll('.term-group').forEach(function(currentGroup) {
+            currentGroup.classList.remove('active');
+        });
+
+        group.classList.add('active');
+    }
+
+    function formatTermValue(value) {
+        const trimmedValue = value.trim();
+
+        if (!trimmedValue) {
+            return '';
+        }
+
+        if (/^".*"$/.test(trimmedValue)) {
+            return trimmedValue;
+        }
+
+        return /\s/.test(trimmedValue) ? `"${trimmedValue}"` : trimmedValue;
+    }
+
     function buildQueryFromGroup(group) {
-        let items = Array.from(group.children).filter(el =>
-            el.classList.contains('search-term') ||
-            el.classList.contains('term-group') ||
-            el.classList.contains('connector-label')
-        );
+        const items = getDirectQueryItems(group);
+        const queryParts = [];
+        let connector = 'AND';
 
-        if (items.length === 0) return '';
-
-        let queryParts = [];
-        let connector = 'AND'; // Default connector
-
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-
+        items.forEach(function(item) {
             if (item.classList.contains('connector-label')) {
                 connector = item.textContent;
-                continue;
+                return;
             }
 
             let part = '';
@@ -248,98 +312,117 @@ document.addEventListener('DOMContentLoaded', function() {
                 const value = item.querySelector('.term-input').value.trim();
 
                 if (value) {
-                    // Format the value (add quotes if it contains spaces)
-                    let formattedValue = value.includes(' ') ? `"${value}"` : value;
-                    // Always include the field prefix for each term
-                    part = `${field}:${formattedValue}`;
+                    part = `${field}:${formatTermValue(value)}`;
                 }
             }
-            else if (item.classList.contains('term-group')) {
-                // For nested groups, recursively build their query
-                const innerQuery = buildQueryFromGroup(item);
 
+            if (item.classList.contains('term-group')) {
+                const innerQuery = buildQueryFromGroup(item);
                 if (innerQuery) {
-                    // Wrap nested group in parentheses for proper grouping
                     part = `(${innerQuery})`;
                 }
             }
 
-            if (part) {
-                // If this isn't the first part and we have a connector from a previous item
-                if (queryParts.length > 0) {
-                    queryParts.push(connector);
-                }
-                queryParts.push(part);
+            if (!part) {
+                return;
             }
-        }
+
+            if (queryParts.length > 0) {
+                queryParts.push(connector);
+            }
+
+            queryParts.push(part);
+        });
 
         return queryParts.join(' ');
     }
-    
-    // Generate query preview 
+
     function updateQueryPreview() {
         const query = buildQueryFromGroup(searchTermsContainer);
         queryPreview.textContent = query || 'No query terms defined';
     }
-    
-    // Generate the URL based on the form inputs
+
+    function applyImportedOptions(options) {
+        if (options.sortBy) {
+            sortByInput.value = options.sortBy;
+        }
+
+        if (options.sortOrder) {
+            sortOrderInput.value = options.sortOrder;
+        }
+
+        if (options.maxResults) {
+            maxResultsInput.value = options.maxResults;
+        }
+    }
+
+    function setImportStatus(message, type) {
+        importStatus.textContent = message;
+        importStatus.className = `import-status ${type}`;
+    }
+
+    function handleImport() {
+        const input = importInput.value;
+
+        try {
+            const imported = parser.parseImportedContent(input);
+            renderImportedAst(imported.ast);
+            applyImportedOptions(imported.options);
+            setImportStatus('Imported successfully. You can keep editing the visual groups below.', 'success');
+        } catch (error) {
+            setImportStatus(error.message, 'error');
+        }
+    }
+
     function generateUrl() {
-        // Base URL for arXiv API
         const baseUrl = 'https://export.arxiv.org/api/query';
-        
-        // Build query from the entire structure
         const searchQuery = buildQueryFromGroup(searchTermsContainer);
-        
-        // Get other options
-        const sortBy = document.getElementById('sort-by').value;
-        const sortOrder = document.getElementById('sort-order').value;
-        const maxResults = document.getElementById('max-results').value;
-        
-        // Build the query parameters
         const params = new URLSearchParams();
-        
+
         if (searchQuery) {
             params.append('search_query', searchQuery);
         }
-        
-        params.append('sortBy', sortBy);
-        params.append('sortOrder', sortOrder);
+
+        params.append('sortBy', sortByInput.value);
+        params.append('sortOrder', sortOrderInput.value);
         params.append('start', '0');
-        params.append('max_results', maxResults);
-        
-        // Generate the final URL
-        const finalUrl = `${baseUrl}?${params.toString()}`;
-        resultUrl.textContent = finalUrl;
-        
-        // Update query preview
+        params.append('max_results', maxResultsInput.value);
+
+        resultUrl.textContent = `${baseUrl}?${params.toString()}`;
         updateQueryPreview();
-        
-        // Show the result container
         document.querySelector('.result-container').style.display = 'block';
     }
-    
-    // Copy URL to clipboard
+
     function copyToClipboard() {
         const text = resultUrl.textContent;
-        
-        if (!text) return;
-        
-        // Create a temporary textarea to copy from
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        
-        // Change button text temporarily
+
+        if (!text) {
+            return;
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(showCopiedState, fallbackCopy);
+            return;
+        }
+
+        fallbackCopy();
+
+        function fallbackCopy() {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showCopiedState();
+        }
+    }
+
+    function showCopiedState() {
         const originalText = copyUrlButton.textContent;
         copyUrlButton.textContent = 'Copied!';
-        setTimeout(() => {
+        setTimeout(function() {
             copyUrlButton.textContent = originalText;
         }, 2000);
     }
-    
-    // Initialize group controls
-    initializeGroupControls();
 });

@@ -40,6 +40,88 @@ h1, h2, h3, h4 {
     margin-bottom: 30px;
 }
 
+.import-panel {
+    margin-bottom: 20px;
+}
+
+.import-disclosure {
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.import-disclosure summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 15px;
+    cursor: pointer;
+    font-weight: 600;
+    list-style: none;
+}
+
+.import-disclosure summary::-webkit-details-marker {
+    display: none;
+}
+
+.import-disclosure summary:hover {
+    background-color: #f3f3f3;
+}
+
+.optional-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: white;
+    background-color: #b31b1b;
+    border-radius: 999px;
+    padding: 3px 8px;
+}
+
+.import-panel-body {
+    padding: 0 15px 15px;
+    border-top: 1px solid #e5e5e5;
+}
+
+.import-panel-body label {
+    display: block;
+    font-weight: 600;
+    margin: 12px 0 8px;
+}
+
+.import-panel-body textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font: inherit;
+    resize: vertical;
+    min-height: 110px;
+}
+
+.import-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.import-status {
+    min-height: 1.4em;
+    margin-top: 10px;
+    font-size: 0.95rem;
+}
+
+.import-status.success {
+    color: #b31b1b;
+}
+
+.import-status.error {
+    color: #b31b1b;
+}
+
 /* Query building styles */
 .query-container {
     margin-bottom: 20px;
@@ -58,6 +140,11 @@ h1, h2, h3, h4 {
     margin-left: 20px;
     border-color: #ccc;
     background-color: #f0f0f0;
+}
+
+.term-group.active {
+    border-color: #b31b1b;
+    box-shadow: 0 0 0 1px rgba(179, 27, 27, 0.15);
 }
 
 .term-group .term-group .term-group {
@@ -147,7 +234,7 @@ h1, h2, h3, h4 {
 
 button {
     cursor: pointer;
-    padding: 8px 12px;
+    padding: 6px 10px;
     border: 1px solid #ddd;
     background-color: #f5f5f5;
     border-radius: 4px;
@@ -296,6 +383,10 @@ footer a:hover {
 }
 
 @media (max-width: 600px) {
+    .import-actions {
+        align-items: stretch;
+    }
+
     .search-term {
         flex-direction: column;
         align-items: stretch;

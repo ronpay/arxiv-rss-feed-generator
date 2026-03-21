@@ -16,6 +16,23 @@
         <main>
             <div class="search-builder">
                 <h2>Build Your Search Query</h2>
+
+                <div class="import-panel">
+                    <details class="import-disclosure">
+                        <summary>
+                            <span>Import Existing Query</span>
+                            <span class="optional-badge">Optional</span>
+                        </summary>
+                        <div class="import-panel-body">
+                            <label for="import-query">Paste an existing query structure or arXiv RSS/API URL</label>
+                            <textarea id="import-query" rows="4" placeholder="Paste a query like cat:cs.CL AND (ti:&quot;large language model&quot; OR abs:&quot;large language model&quot;) or a full https://export.arxiv.org/api/query?... URL"></textarea>
+                            <div class="import-actions">
+                                <button id="import-query-button" class="action-button">Import Into Builder</button>
+                            </div>
+                            <p id="import-status" class="import-status" aria-live="polite"></p>
+                        </div>
+                    </details>
+                </div>
                 
                 <div class="query-container">
                     <div id="search-terms" class="term-group">
@@ -125,6 +142,7 @@
             <p>Based on the <a href="https://info.arxiv.org/help/api/user-manual.html" target="_blank">arXiv API</a>.</p>
         </footer>
     </div>
+    <script src="query-parser.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
